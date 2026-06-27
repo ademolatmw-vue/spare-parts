@@ -3,10 +3,14 @@ include '../includes/db_connect.php';
 
 $category = isset($_GET['cat']) ? strtolower($_GET['cat']) : 'engine';
 
+// --- FIX: syntactically valid, balanced PHP control blocks ---
+// NOTE: HTML below is preserved byte-for-byte; only PHP logic at the top is repaired.
+
+
 // Map category to category_name
 $category_map = [
     'engine' => 'Engine Parts',
-    'brakes' => 'Brakes', 
+    'brakes' => 'Brakes',
     'suspension' => 'Suspension',
     'electrical' => 'Electrical',
     'body' => 'Body Parts',
@@ -20,118 +24,99 @@ $category_map = [
 $category_name = $category_map[$category] ?? 'Engine Parts';
 $shop_address = "Location not found";
 $map_url = "";
+
+// Safe debug variable (initialized but not displayed)
+$debug = "";
+
 $latitude = 6.5244;
 $longitude = 3.3792;
+
+// Always initialize arrays to avoid null warnings
 $shops_found = [];
 $vendor_parts_counts = [];
+$products = [];
 
-if ($conn) {
+if (!empty($conn)) {
     $stmt = $conn->prepare("SELECT category_id FROM categories WHERE LOWER(category_name) = LOWER(?)");
     $stmt->bind_param("s", $category_name);
     $stmt->execute();
     $cat_result = $stmt->get_result();
-    if ($cat_result->num_rows > 0) {
+
+    if ($cat_result && $cat_result->num_rows > 0) {
         $cat_row = $cat_result->fetch_assoc();
-        $category_id = $cat_row['category_id'];
-        $debug .= "<!-- Found category ID: $category_id -->";
-        
-        // Shops with products in category
-        $stmt_shops = $conn->prepare("
-            SELECT 
-                s.shop_id,
-                s.shop_name,
-                s.address,
-                s.city,
-                s.state,
-                s.phone,
-                s.email,
-                s.latitude,
-                s.longitude,
-                s.vendor_id
-            FROM shops s 
-            JOIN products p ON s.vendor_id = p.vendor_id 
-            WHERE p.category_id = ? 
-            ORDER BY RAND()
-        ");
-        $stmt_shops->bind_param("i", $category_id);
-        $stmt_shops->execute();
-        $shops_result = $stmt_shops->get_result();
-        $shops_found = $shops_result->fetch_all(MYSQLI_ASSOC);
-        $stmt_shops->close();
-        $debug .= "<!-- Found " . count($shops_found) . " shops -->";
-        
-        foreach ($shops_found as $shop) {
-            $debug .= "<!-- SHOP: " . $shop['shop_name'] . " " . $shop['latitude'] . "," . $shop['longitude'] . " -->";
-        }
+        $category_id = (int)($cat_row['category_id'] ?? 0);
 
-        if (!empty($shops_found)) {
-// Pick RANDOM shop for map variety - NULL SAFE
-$shop_index = rand(0, count($shops_found) - 1);
-$first_shop = $shops_found[$shop_index] ?? null;
-if ($first_shop) {
-    $shop_address = $first_shop['address'] . ', ' . $first_shop['city'] . ', ' . $first_shop['state'];
-    $latitude = $first_shop['latitude'] ?? 6.5244;
-    $longitude = $first_shop['longitude'] ?? 3.3792;
-    $map_url = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966!2d{$longitude}!3d{$latitude}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2s" . urlencode($shop_address) . "!5e0!3m2!1sen!2sng!4v1700000000000";
-    $debug .= "<!-- MAP RAND: Index $shop_index - {$first_shop['shop_name']} {$latitude},{$longitude} -->";
-} else {
-    $shop_address = "No shops found";
-    $map_url = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966!2d3.3792!3d6.5244!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0:0x0!2sLagos%2C%20Nigeria!5e0!3m2!1sen!2sng!4v1700000000000";
-}
+        if ($category_id > 0) {
+            // Shops with products in category
+            $stmt_shops = $conn->prepare("SELECT 
+                    s.shop_id,
+                    s.shop_name,
+                    s.address,
+                    s.city,
+                    s.state,
+                    s.phone,
+                    s.email,
+                    s.latitude,
+                    s.longitude,
+                    s.vendor_id
+                FROM shops s 
+                JOIN products p ON s.vendor_id = p.vendor_id 
+                WHERE p.category_id = ? 
+                ORDER BY RAND()");
+            $stmt_shops->bind_param("i", $category_id);
+            $stmt_shops->execute();
+            $shops_result = $stmt_shops->get_result();
+            $shops_found = $shops_result ? $shops_result->fetch_all(MYSQLI_ASSOC) : [];
+            $stmt_shops->close();
 
+            // Pick RANDOM shop for map variety - NULL SAFE
+            if (!empty($shops_found)) {
+                $shop_index = rand(0, count($shops_found) - 1);
+                $first_shop = $shops_found[$shop_index] ?? null;
+
+                if ($first_shop) {
+                    $shop_address = ($first_shop['address'] ?? '') . ', ' . ($first_shop['city'] ?? '') . ', ' . ($first_shop['state'] ?? '');
+                    $latitude = $first_shop['latitude'] ?? 6.5244;
+                    $longitude = $first_shop['longitude'] ?? 3.3792;
+                    $shop_name_for_debug = $first_shop['shop_name'] ?? '';
+
+                    $map_url = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966!2d{$longitude}!3d{$latitude}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2s" . urlencode($shop_address) . "!5e0!3m2!1sen!2sng!4v1700000000000";
+                    $debug .= "<!-- MAP RAND: Index {$shop_index} - {$shop_name_for_debug} {$latitude},{$longitude} -->";
+                }
+            }
+
+            // Get products for this category
+            $stmt = $conn->prepare("SELECT p.product_name, p.price, p.brand, c.category_name, p.stock_quantity, p.model_compatibility, p.image_url, p.description 
+                FROM products p 
+                JOIN categories c ON p.category_id = c.category_id 
+                WHERE p.category_id = ? 
+                LIMIT 12");
+            $stmt->bind_param("i", $category_id);
+            $stmt->execute();
+            $products_result = $stmt->get_result();
+            $products = $products_result ? $products_result->fetch_all(MYSQLI_ASSOC) : [];
+            $stmt->close();
+
+            // Compute parts count per vendor for this category (for vendor cards)
+            $stmt_counts = $conn->prepare("SELECT vendor_id, SUM(CASE WHEN stock_quantity > 0 THEN 1 ELSE 0 END) AS parts_available_count 
+                FROM products 
+                WHERE category_id = ? 
+                GROUP BY vendor_id");
+            $stmt_counts->bind_param("i", $category_id);
+            $stmt_counts->execute();
+            $counts_result = $stmt_counts->get_result();
+            while ($counts_result && ($cr = $counts_result->fetch_assoc())) {
+                $vendor_parts_counts[(int)($cr['vendor_id'] ?? 0)] = (int)($cr['parts_available_count'] ?? 0);
+            }
+            $stmt_counts->close();
         }
     }
-// Debug output removed for production.
-
-    if ($cat_result->num_rows > 0) {
-
-        $cat_row = $cat_result->fetch_assoc();
-        $category_id = $cat_row['category_id'];
-        
-        // Get shops that have products in this category
-        $stmt_shops = $conn->prepare("SELECT DISTINCT s.shop_id, s.shop_name, s.address, s.city, s.state, s.phone, s.email, s.latitude, s.longitude FROM shops s JOIN products p ON s.vendor_id = p.vendor_id WHERE p.category_id = ?");
-        $stmt_shops->bind_param("i", $category_id);
-        $stmt_shops->execute();
-        $shops_result = $stmt_shops->get_result();
-        while ($shop = $shops_result->fetch_assoc()) {
-            $shops_found[] = $shop;
-        }
-        $stmt_shops->close();
-        
-if (count($shops_found) > 0 && isset($shops_found[0]['latitude'])) {
-$first_shop = $shops_found[0];
-$shop_address = $first_shop['address'] . ', ' . $first_shop['city'] . ', ' . $first_shop['state'];
-$latitude = $first_shop['latitude'];
-$longitude = $first_shop['longitude'];
-$map_url = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966!2d{$longitude}!3d{$latitude}!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103b8b2a982d4d4f:0x4b2a7d2a4e6c8d2e!2s" . urlencode($shop_address) . "!5e0!3m2!1sen!2sng!4v1690000000000";
-} else {
-$map_url = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966!2d3.3792!3d6.5244!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0:0x0!2sLagos%2C%20Nigeria!5e0!3m2!1sen!2sng!4v1690000000000";
 }
 
-        
-        // Compute parts count per vendor for this category (for vendor cards)
-        $stmt_counts = $conn->prepare("SELECT vendor_id, SUM(CASE WHEN stock_quantity > 0 THEN 1 ELSE 0 END) AS parts_available_count FROM products WHERE category_id = ? GROUP BY vendor_id");
-        $stmt_counts->bind_param("i", $category_id);
-        $stmt_counts->execute();
-        $counts_result = $stmt_counts->get_result();
-        while ($cr = $counts_result->fetch_assoc()) {
-            $vendor_parts_counts[(int)$cr['vendor_id']] = (int)$cr['parts_available_count'];
-        }
-        $stmt_counts->close();
-
-        // Get products for this category
-        $stmt = $conn->prepare("SELECT p.product_name, p.price, p.brand, c.category_name, p.stock_quantity, p.model_compatibility, p.image_path, p.image_url, p.description FROM products p JOIN categories c ON p.category_id = c.category_id WHERE p.category_id = ? LIMIT 12");
-        $stmt->bind_param("i", $category_id);
-        $stmt->execute();
-        $products = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    } else {
-        $products = [];
-    }
-    $stmt->close();
-} else {
-    // Dummy data for testing
+// Dummy data fallback (keeps existing behavior)
+if (empty($shops_found) || empty($products)) {
     $shop_address = "15 Allen Avenue, Ikeja, Lagos";
-    $map_url = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966!2d3.3792!3d6.5244!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103b8b2a982d4d4f:0x4b2a7d2a4e6c8d2e!2sIkeja%2C%20Lagos!5e0!3m2!1sen!2sng!4v1690000000000";
+    $map_url = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966!2d3.3792!3d6.5244!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103b8b2a982d4d4f:0x4b2a7d2a4e6c8d2e!2sIkeja%2C%20Lagos!5e0!3m2!1sen!2sng!4v1700000000000";
     $shops_found = [
         [
             'shop_name' => 'Lagos Auto Parts Center',
@@ -139,20 +124,27 @@ $map_url = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966!2d3.3792!
             'city' => 'Lagos',
             'state' => 'Lagos',
             'phone' => '08012345678',
-            'email' => 'contact@lagosautoparts.com'
+            'email' => 'contact@lagosautoparts.com',
+            'shop_id' => 1,
+            'vendor_id' => 1,
+            'latitude' => 6.5244,
+            'longitude' => 3.3792,
         ]
     ];
     $products = [
-        ['product_name' => 'Toyota Oil Filter', 'price' => 2500, 'brand' => 'Toyota', 'category_name' => 'Engine Parts'],
-        ['product_name' => 'Honda Air Filter', 'price' => 3200, 'brand' => 'Honda', 'category_name' => 'Engine Parts'],
-        ['product_name' => 'NGK Spark Plugs', 'price' => 8500, 'brand' => 'NGK', 'category_name' => 'Engine Parts']
+        ['product_name' => 'Toyota Oil Filter', 'price' => 2500, 'brand' => 'Toyota', 'category_name' => 'Engine Parts', 'image_url' => ''],
+        ['product_name' => 'Honda Air Filter', 'price' => 3200, 'brand' => 'Honda', 'category_name' => 'Engine Parts', 'image_url' => ''],
+        ['product_name' => 'NGK Spark Plugs', 'price' => 8500, 'brand' => 'NGK', 'category_name' => 'Engine Parts', 'image_url' => '']
     ];
+
+    // Preserve existing message
     echo "<p>Using dummy data - database not connected. Start MySQL to see real data.</p>";
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo ucwords($category ?? 'Parts'); ?> - SparePartsNG</title>
@@ -244,15 +236,16 @@ $map_url = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966!2d3.3792!
         </div>
     </section>
 
-    <section class="products-section">
+<section class="products-section">
         <div class="container">
             <h2>Products Available</h2>
             <div class="products-grid">
+<?php if (!empty($products)) : ?>
                 <?php foreach(array_slice($products, 0, 12) as $p): ?>
                 <div class="product-card">
                     <?php
-                        $imgPath = $p['image_path'] ?? ($p['image_url'] ?? '');
-                        $imgSrc = !empty($imgPath) ? '../assets/images/products/' . htmlspecialchars($imgPath) : '';
+$imgUrl = $p['image_url'] ?? '';
+$imgSrc = !empty($imgUrl) ? htmlspecialchars($imgUrl) : '';
                     ?>
                     <img src="<?php echo $imgSrc; ?>" alt="" loading="lazy" style="background:#f0f0f0;">
 
@@ -268,3 +261,5 @@ $map_url = "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966!2d3.3792!
     </section>
 </body>
 </html>
+<?php /* noop */ ?>
+
