@@ -1,0 +1,75 @@
+-- REAL PRODUCT VARIETY - All 12 Shops get products!
+DELETE FROM products WHERE 1;
+
+-- Engine Parts (vendors 1,5,9,12)
+INSERT INTO products (vendor_id, category_id, product_name, description, price, brand, stock_quantity) VALUES
+(1,1,'Toyota Oil Filter','Engine oil filter',2500,'Toyota',50),
+(5,1,'Honda Air Filter','Air intake filter',3200,'Honda',35),
+(9,1,'NGK Spark Plugs','Iridium plugs set',8500,'NGK',100),
+(12,1,'Nissan Water Pump','Cooling water pump',12500,'Nissan',20);
+
+-- Brakes (vendors 2,6,10)
+INSERT INTO products (vendor_id, category_id, product_name, description, price, brand, stock_quantity) VALUES
+(2,2,'Brembo Brake Pads','Front ceramic pads',15000,'Brembo',40),
+(6,2,'Bosch Brake Disc','Rear ventilated disc',18000,'Bosch',25),
+(10,2,'Aisin Brake Caliper','Left front caliper',22000,'Aisin',15),
+(2,2,'Motul Brake Fluid','DOT4 1L bottle',3500,'Motul',200);
+
+-- Suspension (vendors 3,7,11)
+INSERT INTO products (vendor_id, category_id, product_name, description, price, brand, stock_quantity) VALUES
+(3,3,'Monroe Shock Absorber','Front pair',45000,'Monroe',20),
+(7,3,'KYB Strut Assembly','Complete unit',55000,'KYB',15),
+(11,3,'Meyle Control Arm','Upper with ball joint',28000,'Meyle',18),
+(3,3,'SKF Wheel Bearing','Hub unit',12000,'SKF',30);
+
+-- Electrical (vendors 4,8,12,1)
+INSERT INTO products (vendor_id, category_id, product_name, description, price, brand, stock_quantity) VALUES
+(4,4,'Exide Car Battery','12V 75AH',45000,'Exide',50),
+(8,4,'Denso Alternator','120A unit',65000,'Denso',12),
+(12,4,'Mitsubishi Starter','OEM starter motor',48000,'Mitsubishi',10),
+(1,4,'Philips LED Headlight','H4 LED kit',18000,'Philips',80);
+
+-- Body Parts (vendors 5,9)
+INSERT INTO products (vendor_id, category_id, product_name, description, price, brand, stock_quantity) VALUES
+(5,5,'Toyota Side Mirror','Driver side',25000,'Toyota',15),
+(9,5,'Honda Front Bumper','Paint ready',35000,'Honda',8),
+(5,5,'Nissan Tail Light','LED assembly',22000,'Nissan',12),
+(9,5,'Universal Door Handle','Interior black',5500,'Aftermarket',100);
+
+-- Transmission (vendors 6,10)
+INSERT INTO products (vendor_id, category_id, product_name, description, price, brand, stock_quantity) VALUES
+(6,6,'Exedy Clutch Kit','Complete kit',85000,'Exedy',10),
+(10,6,'Toyota Transmission Filter','AT filter kit',12000,'Toyota',25),
+(6,6,'GSP CV Joint','Inner joint',18000,'GSP',20),
+(10,6,'Shell Gear Oil','80W-90 1L',4500,'Shell',150);
+
+-- Cooling (vendors 7,11)
+INSERT INTO products (vendor_id, category_id, product_name, description, price, brand, stock_quantity) VALUES
+(7,7,'Toyota Radiator','Full assembly',48000,'Toyota',8),
+(11,7,'Gates Thermostat','OEM thermostat',8500,'Gates',30),
+(7,7,'Denso Water Pump','With gasket',15000,'Denso',18),
+(11,7,'Prestone Coolant','5L antifreeze',6000,'Prestone',100);
+
+-- Exhaust (vendors 2,4,8)
+INSERT INTO products (vendor_id, category_id, product_name, description, price, brand, stock_quantity) VALUES
+(2,8,'Walker Muffler','Rear muffler',25000,'Walker',25),
+(4,8,'Universal Catalytic','3-way catalytic converter',45000,'Magnaflow',10),
+(8,8,'Exhaust Pipe','Intermediate pipe',18000,'Ansa',20),
+(2,8,'Silencer Clamp','Stainless clamp',1500,'Aftermarket',100);
+
+-- Interior (vendors 3,5,9,12 → Warri/Enugu/Lagos/Akwete)
+INSERT INTO products (vendor_id, category_id, product_name, description, price, brand, stock_quantity) VALUES
+(3,9,'Leather Seat Covers','Full set Toyota',35000,'Leathertex',20),
+(5,9,'Steering Cover','Leather universal',5500,'Generic',80),
+(9,9,'Rubber Floor Mats','Toyota Camry set',12000,'Weathertech',40),
+(12,9,'Dashboard Mat','Honda Civic mat',8500,'MotoShield',25);
+
+-- Wheels (vendors 6,10,11 → Benin/Jos/Ilorin)
+INSERT INTO products (vendor_id, category_id, product_name, description, price, brand, stock_quantity) VALUES
+(6,10,'Michelin Tire 205/55R16','All season tire',45000,'Michelin',40),
+(10,10,'Continental 225/45R17','Performance tire',55000,'Continental',30),
+(11,10,'Alloy Rim 16 inch','Toyota Camry rim',35000,'Original',15),
+(6,10,'TPMS Sensor','Tire pressure sensor',8500,'Schrader',60);
+
+-- phpMyAdmin: SELECT → RUN → http://localhost/spare-parts-platform/pages/test_db_fixed.php → 12 shops/40 products
+
