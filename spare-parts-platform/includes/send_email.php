@@ -23,7 +23,6 @@ function spng_send_email(string $toEmail, string $toName, string $subject, strin
 
     $mail = new PHPMailer\PHPMailer\PHPMailer(true);
 
-
     try {
         $mail->isSMTP();
         $mail->Host = $cfg['smtp_host'];
@@ -32,6 +31,15 @@ function spng_send_email(string $toEmail, string $toName, string $subject, strin
         $mail->Password = $cfg['smtp_password'];
         $mail->SMTPSecure = $cfg['smtp_secure'];
         $mail->Port = (int)$cfg['smtp_port'];
+
+        // SMTPOptions for local connection capability without verified certificates
+        $mail->SMTPOptions = [
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+                'allow_self_signed' => true
+            ]
+        ];
 
         $mail->setFrom($cfg['from_email'], $cfg['from_name']);
         $mail->addAddress($toEmail, $toName);
@@ -46,6 +54,8 @@ function spng_send_email(string $toEmail, string $toName, string $subject, strin
         $mail->send();
         return true;
     } catch (Throwable $e) {
+        $GLOBALS['SPNG_EMAIL_ERROR'] = $e->getMessage();
+        error_log("PHPMailer Error: " . $e->getMessage() . " | Mailer Info: " . $mail->ErrorInfo);
         return false;
     }
 }

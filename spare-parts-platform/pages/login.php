@@ -32,7 +32,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($user['user_type'] == 'vendor') {
                 header("Location: vendor_dashboard.php");
             } else {
-                header("Location: ../index.php");
+                header("Location: ../index.html");
             }
             exit();
         } else {
@@ -61,7 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <h1>SpareParts</h1>
             </div>
             <ul class="nav-links">
-                <li><a href="../index.php">Home</a></li>
+                <li><a href="../index.html">Home</a></li>
                 <li><a href="register.php">Register</a></li>
             </ul>
             <div class="hamburger">

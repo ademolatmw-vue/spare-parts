@@ -14,7 +14,7 @@ return [
     'smtp_username' => 'sparepartsng.project@gmail.com',
 
     // Gmail App Password (NOT your regular password)
-    'smtp_password' => 'qjgzyqchgxayvwun',
+    'smtp_password' => 'oontvtcdangokbva',
 
     // From details
     'from_email' => 'sparepartsng.project@gmail.com',

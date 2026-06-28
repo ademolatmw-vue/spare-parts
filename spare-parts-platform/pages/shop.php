@@ -29,7 +29,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 $shop_products = [];
 while ($row = $result->fetch_assoc()) {
-    $imgPath = $row['image_path'] ?? ($row['image_url'] ?? '');
+    $imgPath = $row['image_url'] ?? ($row['image_url'] ?? '');
     $row['image'] = !empty($imgPath) ? '../assets/images/products/' . $imgPath : '';
     $row['price'] = floatval($row['price']);
     $shop_products[] = $row;
@@ -43,7 +43,7 @@ $stmt->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($shop['name']); ?> - SparePartsNG</title>
+    <title><?php echo htmlspecialchars($shop['shop_name'] ?? ''); ?> - SparePartsNG</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -267,7 +267,7 @@ $stmt->close();
     <section class="shop-header">
         <div class="shop-header-content">
             <div class="shop-info">
-                <h1><?php echo htmlspecialchars($shop['name']); ?></h1>
+                <h1><?php echo htmlspecialchars($shop['shop_name'] ?? ''); ?></h1>
                 <p class="address"><i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($shop['address']); ?></p>
                 <p class="rating">
                     <?php 
@@ -331,7 +331,9 @@ $stmt->close();
     <section class="map-section">
         <h2 class="section-title">Shop Location</h2>
         <div class="map-container">
-
+            <iframe 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966!2d<?php echo $shop['longitude'] ?? 3.3792; ?>!3d<?php echo $shop['latitude'] ?? 6.5244; ?>!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0:0x0!2z<?php echo $shop['latitude'] ?? 6.5244; ?>N%20<?php echo $shop['longitude'] ?? 3.3792; ?>E!5e0!3m2!1sen!2sng!4v1720000000000" 
+                width="100%" height="100%" style="border:0;" 
                 allowfullscreen="" 
                 loading="lazy">
             </iframe>

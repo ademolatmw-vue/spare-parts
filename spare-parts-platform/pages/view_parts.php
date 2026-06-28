@@ -34,7 +34,7 @@ $stmt = $conn->prepare("SELECT
         p.stock_quantity,
         p.model_compatibility,
         p.image_url,
-        p.image_path
+        p.image_url
     FROM products p
     JOIN categories c ON p.category_id = c.category_id
     WHERE p.vendor_id = ?
@@ -45,7 +45,7 @@ $stmt->execute();
 $result = $stmt->get_result();
 $shop_products = [];
 while ($row = $result->fetch_assoc()) {
-    $imgPath = $row['image_path'] ?? '';
+    $imgPath = $row['image_url'] ?? '';
     $imgUrl = $row['image_url'] ?? '';
 
     if (!empty($imgPath)) {
@@ -77,7 +77,7 @@ $stmt->close();
     <style>
         /* Same styles as shop.php */
         body { font-family: 'Poppins', sans-serif; }
-        .parts-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 40px 0; }
+        .parts-header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 40px 0px;  margin-top: 90px;}
         .parts-header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
         .parts-info h1 { font-size: 2rem; margin-bottom: 10px; }
         .products-section { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
@@ -145,7 +145,7 @@ $stmt->close();
                     <?php
                         // Local image system (no external placeholders)
                         $productImage = '';
-                        $imagePath = $product['image_path'] ?? '';
+                        $imagePath = $product['image_url'] ?? '';
                         $imageUrl = $product['image_url'] ?? '';
                         $productName = $product['product_name'] ?? '';
 
