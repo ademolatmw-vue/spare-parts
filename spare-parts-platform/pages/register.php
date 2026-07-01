@@ -45,7 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     if ($user_type == 'vendor') {
                         header("Location: vendor_dashboard.php");
                     } else {
-                        header("Location: ../index.html");
+                        header("Location: ../index.php");
                     }
                     exit();
                 } else {

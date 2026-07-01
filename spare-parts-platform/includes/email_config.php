@@ -7,8 +7,8 @@
 // Gmail SMTP settings
 return [
     'smtp_host' => 'smtp.gmail.com',
-    'smtp_port' => 587,
-    'smtp_secure' => 'tls',
+    'smtp_port' => 465,
+    'smtp_secure' => 'ssl',
 
     // Gmail username (the account that sends emails)
     'smtp_username' => 'sparepartsng.project@gmail.com',

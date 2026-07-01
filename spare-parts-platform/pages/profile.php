@@ -7,152 +7,186 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$user_id = $_SESSION['user_id'];
+$user_id = (int)$_SESSION['user_id'];
 
-// Handle profile update
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_profile'])) {
-    $name = trim($_POST['name']);
-    $email = trim($_POST['email']);
-
-    if (!empty($name) && !empty($email)) {
-        $stmt = $conn->prepare("UPDATE users SET name = ?, email = ? WHERE user_id = ?");
-        $stmt->bind_param("ssi", $name, $email, $user_id);
-        $stmt->execute();
-        $stmt->close();
-        $_SESSION['user_name'] = $name;
-        $success = "Profile updated successfully.";
-    } else {
-        $error = "Name and email are required.";
-    }
-}
-
-// Handle password change
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['change_password'])) {
-    $current_password = $_POST['current_password'];
-    $new_password = $_POST['new_password'];
-    $confirm_password = $_POST['confirm_password'];
-
-    if (!empty($current_password) && !empty($new_password) && $new_password === $confirm_password) {
-        $stmt = $conn->prepare("SELECT password FROM users WHERE user_id = ?");
-        $stmt->bind_param("i", $user_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $user = $result->fetch_assoc();
-        $stmt->close();
-
-        if (password_verify($current_password, $user['password'])) {
-            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("UPDATE users SET password = ? WHERE user_id = ?");
-            $stmt->bind_param("si", $hashed_password, $user_id);
-            $stmt->execute();
-            $stmt->close();
-            $success = "Password changed successfully.";
-        } else {
-            $error = "Current password is incorrect.";
-        }
-    } else {
-        $error = "All password fields are required and new passwords must match.";
-    }
-}
-
-// Get user info
-$stmt = $conn->prepare("SELECT * FROM users WHERE user_id = ?");
+// Fetch current user info
+$stmt = $conn->prepare("SELECT user_id, name, email, phone, user_type, location, state, city, created_at FROM users WHERE user_id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
-// Get user's orders
-$stmt = $conn->prepare("SELECT o.*, p.name as product_name, v.name as vendor_name FROM orders o JOIN products p ON o.product_id = p.product_id JOIN vendors v ON p.vendor_id = v.vendor_id WHERE o.user_id = ? ORDER BY o.created_at DESC");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$orders = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-$stmt->close();
+if (!$user) {
+    header("Location: logout.php");
+    exit();
+}
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - Spare Parts Platform</title>
+    <title>My Profile - SparePartsNG</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .profile-page { padding: 110px 0 60px; min-height: 100vh; background: var(--black, #0d1117); }
+        .profile-card {
+            background: var(--dark-gray, #161b22);
+            border: 1px solid var(--border-gray, #484f58);
+            border-radius: 12px;
+            max-width: 680px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        .profile-header {
+            background: linear-gradient(135deg, #e63946 0%, #c1121f 100%);
+            padding: 2rem;
+            text-align: center;
+        }
+        .profile-avatar {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2.2rem; color: #fff;
+        }
+        .profile-header h2 { color: #fff; margin: 0 0 4px; font-size: 1.5rem; }
+        .profile-header .user-type-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            text-transform: capitalize;
+        }
+        .profile-body { padding: 2rem; }
+        .profile-row {
+            display: flex;
+            align-items: flex-start;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--border-gray, #30363d);
+        }
+        .profile-row:last-child { border-bottom: none; }
+        .profile-row .label {
+            width: 160px;
+            flex-shrink: 0;
+            color: var(--text-gray, #8b949e);
+            font-size: 0.88rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .profile-row .value {
+            color: var(--light-text, #c9d1d9);
+            font-size: 0.95rem;
+            flex: 1;
+        }
+        .profile-row .value.empty { color: var(--text-gray, #8b949e); font-style: italic; }
+        .profile-actions {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--border-gray, #30363d);
+            display: flex;
+            gap: 1rem;
+        }
+        .btn-edit-profile {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            background: linear-gradient(135deg, #e63946 0%, #c1121f 100%);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+        .btn-edit-profile:hover { opacity: 0.9; transform: translateY(-1px); color: #fff; }
+        .btn-logout-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            background: transparent;
+            border: 1px solid var(--border-gray, #484f58);
+            color: var(--text-gray, #8b949e);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: border-color 0.2s, color 0.2s;
+        }
+        .btn-logout-link:hover { border-color: #f85149; color: #f85149; }
+    </style>
 </head>
 <body>
-    <div class="navbar">
+    <?php include '../includes/navbar.php'; ?>
+
+    <section class="profile-page">
         <div class="container">
-            <div class="logo">
-                <h1>SpareParts</h1>
-            </div>
-            <ul class="nav-links">
-                <li><a href="../index.php">Home</a></li>
-                <li><a href="search.php">Search</a></li>
-                <li><a href="logout.php">Logout</a></li>
-            </ul>
-            <div class="hamburger">
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
-            </div>
-        </div>
-    </div>
-
-    <section class="profile-section" style="padding: 100px 0 2rem;">
-        <div class="container">
-            <h2>Your Profile</h2>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
-                <div>
-                    <h3>Update Profile</h3>
-                    <?php if (isset($success)) echo "<p style='color: green;'>$success</p>"; ?>
-                    <?php if (isset($error)) echo "<p style='color: red;'>$error</p>"; ?>
-                    <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" style="background: white; padding: 1rem; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1);">
-                        <input type="hidden" name="update_profile" value="1">
-                        <div style="margin-bottom: 1rem;">
-                            <label for="name">Full Name:</label>
-                            <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($user['name']); ?>" required style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 5px;">
-                        </div>
-                        <div style="margin-bottom: 1rem;">
-                            <label for="email">Email:</label>
-                            <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($user['email']); ?>" required style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 5px;">
-                        </div>
-                        <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem; background-color: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">Update Profile</button>
-                    </form>
-
-                    <h3 style="margin-top: 2rem;">Change Password</h3>
-                    <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" style="background: white; padding: 1rem; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1);">
-                        <input type="hidden" name="change_password" value="1">
-                        <div style="margin-bottom: 1rem;">
-                            <label for="current_password">Current Password:</label>
-                            <input type="password" id="current_password" name="current_password" required style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 5px;">
-                        </div>
-                        <div style="margin-bottom: 1rem;">
-                            <label for="new_password">New Password:</label>
-                            <input type="password" id="new_password" name="new_password" required style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 5px;">
-                        </div>
-                        <div style="margin-bottom: 1rem;">
-                            <label for="confirm_password">Confirm New Password:</label>
-                            <input type="password" id="confirm_password" name="confirm_password" required style="width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 5px;">
-                        </div>
-                        <button type="submit" class="btn-primary" style="padding: 0.5rem 1rem; background-color: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">Change Password</button>
-                    </form>
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h2><?php echo htmlspecialchars($user['name']); ?></h2>
+                    <span class="user-type-badge"><?php echo htmlspecialchars($user['user_type']); ?></span>
                 </div>
 
-                <div>
-                    <h3>Your Orders</h3>
-                    <div style="background: white; padding: 1rem; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1); max-height: 400px; overflow-y: auto;">
-                        <?php if (!empty($orders)): ?>
-                            <?php foreach ($orders as $order): ?>
-                                <div style="border-bottom: 1px solid #eee; padding: 0.5rem 0;">
-                                    <h4><?php echo htmlspecialchars($order['product_name']); ?></h4>
-                                    <p>Vendor: <?php echo htmlspecialchars($order['vendor_name']); ?> | Status: <?php echo htmlspecialchars($order['status']); ?></p>
-                                    <p>Date: <?php echo date('M d, Y', strtotime($order['created_at'])); ?></p>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <p>No orders yet.</p>
-                        <?php endif; ?>
+                <div class="profile-body">
+                    <div class="profile-row">
+                        <span class="label"><i class="fas fa-user"></i> Full Name</span>
+                        <span class="value"><?php echo htmlspecialchars($user['name']); ?></span>
                     </div>
+                    <div class="profile-row">
+                        <span class="label"><i class="fas fa-envelope"></i> Email</span>
+                        <span class="value"><?php echo htmlspecialchars($user['email']); ?></span>
+                    </div>
+                    <div class="profile-row">
+                        <span class="label"><i class="fas fa-phone"></i> Phone Number</span>
+                        <span class="value <?php echo empty($user['phone']) ? 'empty' : ''; ?>">
+                            <?php echo !empty($user['phone']) ? htmlspecialchars($user['phone']) : 'Not set'; ?>
+                        </span>
+                    </div>
+                    <div class="profile-row">
+                        <span class="label"><i class="fas fa-map-marker-alt"></i> Address</span>
+                        <span class="value <?php echo empty($user['location']) ? 'empty' : ''; ?>">
+                            <?php echo !empty($user['location']) ? htmlspecialchars($user['location']) : 'Not set'; ?>
+                        </span>
+                    </div>
+                    <div class="profile-row">
+                        <span class="label"><i class="fas fa-city"></i> City</span>
+                        <span class="value <?php echo empty($user['city']) ? 'empty' : ''; ?>">
+                            <?php echo !empty($user['city']) ? htmlspecialchars($user['city']) : 'Not set'; ?>
+                        </span>
+                    </div>
+                    <div class="profile-row">
+                        <span class="label"><i class="fas fa-map"></i> State</span>
+                        <span class="value <?php echo empty($user['state']) ? 'empty' : ''; ?>">
+                            <?php echo !empty($user['state']) ? htmlspecialchars($user['state']) : 'Not set'; ?>
+                        </span>
+                    </div>
+                    <div class="profile-row">
+                        <span class="label"><i class="fas fa-id-badge"></i> User Type</span>
+                        <span class="value" style="text-transform: capitalize;"><?php echo htmlspecialchars($user['user_type']); ?></span>
+                    </div>
+                    <div class="profile-row">
+                        <span class="label"><i class="fas fa-calendar-alt"></i> Member Since</span>
+                        <span class="value"><?php echo date('F j, Y', strtotime($user['created_at'])); ?></span>
+                    </div>
+                </div>
+
+                <div class="profile-actions">
+                    <a href="edit_profile.php" class="btn-edit-profile" id="editProfileBtn">
+                        <i class="fas fa-pencil-alt"></i> Edit Profile
+                    </a>
+                    <a href="logout.php" class="btn-logout-link" id="logoutProfileBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
                 </div>
             </div>
         </div>

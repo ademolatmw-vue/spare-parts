@@ -1,3 +1,4 @@
+<?php session_start(); ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,10 +6,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SpareParts NG - Find Original Automobile Spare Parts in Nigeria</title>
+    <meta name="description" content="Find original automobile spare parts near you. Connect with verified vendors across Nigeria.">
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
         rel="stylesheet">
+    <style>
+        /* User menu dropdown */
+        .user-menu-wrap {
+            position: relative;
+            display: inline-block;
+        }
+        .user-menu-btn {
+            background: none;
+            border: none;
+            color: var(--white, #f0f6fc);
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .user-menu-btn:hover { background: rgba(255,255,255,0.08); }
+        .user-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 8px);
+            background: #1d3557;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            min-width: 160px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            z-index: 1000;
+        }
+        .user-menu-wrap:hover .user-dropdown,
+        .user-menu-wrap.open .user-dropdown { display: block; }
+        .user-dropdown a {
+            display: block;
+            padding: 10px 16px;
+            color: #c9d1d9;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        .user-dropdown a:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .user-dropdown a:first-child { border-radius: 8px 8px 0 0; }
+        .user-dropdown a:last-child { border-radius: 0 0 8px 8px; color: #f85149; }
+    </style>
 </head>
 
 <body>
@@ -19,15 +69,27 @@
                 <h1><i class="fas fa-car"></i> SpareParts<span class="highlight">NG</span></h1>
             </div>
             <ul class="nav-links">
-                <li><a href="index.html" class="active">Home</a></li>
+                <li><a href="index.php" class="active">Home</a></li>
                 <li><a href="#parts">Parts</a></li>
-
                 <li><a href="#about">About</a></li>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                <li>
+                    <div class="user-menu-wrap" id="userMenuWrap">
+                        <button class="user-menu-btn" id="userMenuBtn" onclick="document.getElementById('userMenuWrap').classList.toggle('open')">
+                            <i class="fas fa-user-circle"></i>
+                            👤 Welcome, <?php echo htmlspecialchars($_SESSION['user_name']); ?>
+                            <i class="fas fa-chevron-down" style="font-size:0.7rem;"></i>
+                        </button>
+                        <div class="user-dropdown">
+                            <a href="pages/profile.php"><i class="fas fa-id-card"></i> My Profile</a>
+                            <a href="pages/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        </div>
+                    </div>
+                </li>
+                <?php else: ?>
                 <li><a href="pages/login.php" class="btn-nav">Login</a></li>
                 <li><a href="pages/register.php" class="btn-nav btn-primary-small">Register</a></li>
-
-
-
+                <?php endif; ?>
             </ul>
             <div class="hamburger">
                 <span class="bar"></span>
@@ -187,7 +249,7 @@
                         <div class="category-icon">
                             <i class="fas fa-circle"></i>
                         </div>
-                        <h3>Wheels & Tires</h3>
+                        <h3>Wheels &amp; Tires</h3>
                         <p>Tires, rims, valves, sensors</p>
                         <span class="parts-count"></span>
                     </a>
@@ -239,15 +301,11 @@
                 <div class="footer-section">
                     <h4>Quick Links</h4>
                     <ul>
-                        <li><a href="index.html">Home</a></li>
+                        <li><a href="index.php">Home</a></li>
                         <li><a href="#parts">Parts</a></li>
                         <li><a href="#about">About Us</a></li>
                         <li><a href="pages/login.php">Login</a></li>
                         <li><a href="pages/register.php">Register</a></li>
-
-
-
-
                     </ul>
                 </div>
                 <div class="footer-section">
@@ -274,6 +332,15 @@
     </footer>
 
     <script src="assets/js/script.js"></script>
+    <script>
+        // Close user menu when clicking outside
+        document.addEventListener('click', function(e) {
+            var wrap = document.getElementById('userMenuWrap');
+            if (wrap && !wrap.contains(e.target)) {
+                wrap.classList.remove('open');
+            }
+        });
+    </script>
 </body>
 
 </html>

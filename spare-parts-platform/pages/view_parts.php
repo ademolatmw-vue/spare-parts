@@ -1,5 +1,6 @@
 <?php
 // View Parts for Specific Shop
+session_start();
 $shop_id = isset($_GET['shop_id']) ? intval($_GET['shop_id']) : 1;
 
 include_once '../includes/db_connect.php';
@@ -98,21 +99,7 @@ $stmt->close();
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar">
-        <div class="container">
-            <div class="logo">
-                <h1><i class="fas fa-car"></i> SpareParts<span class="highlight">NG</span></h1>
-            </div>
-            <ul class="nav-links">
-                <li><a href="../index.html">Home</a></li>
-                <li><a href="../index.html#parts">Parts</a></li>
-                <li><a href="../index.html#shops">Shops</a></li>
-                <li><a href="../index.html#about">About</a></li>
-                <li><a href="login.php" class="btn-nav">Login</a></li>
-                <li><a href="register.php" class="btn-nav btn-primary-small">Register</a></li>
-            </ul>
-        </div>
-    </nav>
+    <?php include '../includes/navbar.php'; ?>
 
     <!-- Parts Header -->
     <section class="parts-header">

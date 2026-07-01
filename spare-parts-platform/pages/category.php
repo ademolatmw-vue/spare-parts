@@ -1,4 +1,5 @@
 <?php
+session_start();
 include '../includes/db_connect.php';
 
 $category = isset($_GET['cat']) ? strtolower($_GET['cat']) : 'engine';
@@ -151,17 +152,7 @@ if ($conn) {
 </head>
 
 <body>
-    <nav class="navbar">
-        <div class="container">
-            <div class="logo">
-                <h1><i class="fas fa-car"></i> SpareParts<span class="highlight">NG</span></h1>
-            </div>
-            <ul class="nav-links">
-                <li><a href="../index.html">Home</a></li>
-                <li><a href="../index.html#parts">Parts</a></li>
-            </ul>
-        </div>
-    </nav>
+    <?php include '../includes/navbar.php'; ?>
     
     <section class="category-hero">
         <div class="container">

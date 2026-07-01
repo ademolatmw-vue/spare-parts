@@ -1,4 +1,5 @@
 <?php
+session_start();
 include '../includes/db_connect.php';
 
 $search_term = isset($_GET['q']) ? trim($_GET['q']) : '';
@@ -54,25 +55,7 @@ if ($conn && $search_term !== '') {
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar">
-        <div class="container">
-            <div class="logo">
-                <h1><i class="fas fa-car"></i> SpareParts<span class="highlight">NG</span></h1>
-            </div>
-            <ul class="nav-links">
-                <li><a href="../index.html">Home</a></li>
-                <li><a href="../index.html#parts">Parts</a></li>
-                <li><a href="../index.html#shops">Shops</a></li>
-                <li><a href="../index.html#about">About</a></li>
-                <li><a href="login.php" class="btn-nav">Login</a></li>
-            </ul>
-            <div class="hamburger">
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
-            </div>
-        </div>
-    </nav>
+    <?php include '../includes/navbar.php'; ?>
 
     <!-- Hero -->
     <section class="hero">
